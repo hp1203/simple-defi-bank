@@ -13,6 +13,7 @@ const App = () => {
   const [token, setToken] = useState(null);
   const [dbank, setDbank] = useState(null);
   const [balance, setBalance] = useState(0);
+  const [orbitalBalance, setOrbitalBalance] = useState(0);
   const [dBankAddress, setDBankAddress] = useState(null);
   const [depositModelShow, setDepositModelShow] = useState(false);
   const [withdrawModelShow, setWithdrawModelShow] = useState(false);
@@ -20,9 +21,11 @@ const App = () => {
   const [totalETHDeposit, setTotalETHDeposit] = useState(0);
   const [yourETHDeposit, setYourETHDeposit] = useState(0);
   const [interest, setInterest] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const ethEnabled = () => {  
     if (window.web3) {    
+      console.log(window.web3)
       window.web3 = new Web3(window.web3.currentProvider);    
       window.ethereum.enable();    
       return true;  
@@ -41,14 +44,19 @@ const App = () => {
   const loadBlockchainData = async () => {
     //check if MetaMask exists
     if (!ethEnabled()) {  alert("Please install MetaMask to use this dApp!");}
-    const web3 = new Web3(window.web3.currentProvider);
-    const netId = await web3.eth.net.getId();
-    const accounts = await web3.eth.getAccounts();
+    // const web3 = new Web3(window.web3.currentProvider);
+    // console.log(web3)
+    const netId = await window.web3.eth.net.getId();
+    console.log("NetId", Token.networks[netId].address)
+    const accounts = await window.web3.eth.getAccounts();
     if(typeof accounts[0] !== 'undefined'){
-      let balance = await web3.eth.getBalance(accounts[0]);
-      balance = await web3.utils.fromWei(balance);
+      let balance = await window.web3.eth.getBalance(accounts[0]);
+      balance = await window.web3.utils.fromWei(balance);
+      console.log("Balance", balance);
 
-      setWeb3(web3);
+      
+
+      // setWeb3(web3);
       setBalance(balance);
       setAccount(accounts[0]);
     }else{
@@ -56,9 +64,10 @@ const App = () => {
     }
 
     try {
-      const token = new web3.eth.Contract(Token.abi, Token.networks[netId].address);
-      const dbank = new web3.eth.Contract(dBank.abi, dBank.networks[netId].address);
+      const token = new window.web3.eth.Contract(Token.abi, Token.networks[netId].address);
+      const dbank = new window.web3.eth.Contract(dBank.abi, dBank.networks[netId].address);
       const dbankAddress = dBank.networks[netId].address;
+
       setToken(token);
       setDbank(dbank);
       setDBankAddress(dbankAddress);
@@ -76,15 +85,17 @@ const App = () => {
       // console.log(account)
       // console.log(await dbank.methods.balance(account).call())
       const yourEthDeposit = await dbank.methods.balance(account).call()
-      setYourETHDeposit(await web3.utils.fromWei(yourEthDeposit))
+      setYourETHDeposit(await window.web3.utils.fromWei(yourEthDeposit))
 
       const totalEthDeposit = await dbank.methods.depositsBalance().call()
-      setTotalETHDeposit(await web3.utils.fromWei(totalEthDeposit))
+      setTotalETHDeposit(await window.web3.utils.fromWei(totalEthDeposit))
 
       const interest = await dbank.methods.estimatedInterest(account).call();
       console.log(interest);
-      setInterest(await web3.utils.fromWei(interest));
+      setInterest(await window.web3.utils.fromWei(interest));
       
+      const OrbitalBalance = await token.methods.balanceOf(account).call();
+      setOrbitalBalance(await window.web3.utils.fromWei(OrbitalBalance));
       // setTimeout( async () => {
       //   console.log(account)
       //   console.log(await dbank.methods.estimatedInterest(account).send())
@@ -104,7 +115,7 @@ const App = () => {
   const deposit = async (amount) => {
     if(dbank !== 'undefined'){
       try {
-        // let a = await web3.utils.toWei(amount)
+        // let a = await window.web3.utils.toWei(amount)
         let a = amount * 10**18 //convert to wei
         console.log(a)
         await dbank.methods.deposit().send({
@@ -119,7 +130,6 @@ const App = () => {
   }
 
   const withdraw = async () => {
-    window.alert("Withdrad")
     if(dbank !== 'undefined'){
       try {
         await dbank.methods.withdraw().send({
@@ -133,13 +143,17 @@ const App = () => {
   }
 
 
+  const kFormatter = (num) => {
+    return Math.abs(num) > 999 ? Math.sign(num)*((Math.abs(num)/1000).toFixed(1)) + 'k' : Math.sign(num)*Math.abs(num)
+  }
+
   useEffect(() => {
 
     loadBlockchainData()
 
   },[]);
 
-  console.log(interest)
+  // console.log(interest)
   return (
     <div className=''>
         <Navbar bg="primary" variant="dark" expand="lg">
@@ -157,7 +171,7 @@ const App = () => {
           <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Navbar.Text>
             {
-              web3 !== 'undefined' ?
+              window.web3 !== 'undefined' ?
               <Nav.Link>  <Badge variant="success" style={{width:10, height:10}}>{' '}</Badge>{' '}Metamask Connected</Nav.Link> : 
               <Nav.Link onClick={ethEnabled}>  <Badge variant="danger" style={{width:10, height:10}}>{' '}</Badge>{' '}Connect Metamask</Nav.Link> 
             }
@@ -210,7 +224,11 @@ const App = () => {
                   <ListGroup horizontal>
                     <ListGroup.Item style={{ textAlign:"center" }}>
                       <Image src="https://cdn.worldvectorlogo.com/logos/ethereum-eth.svg" style={{ width: 40, marginBottom:10 }}/> 
-                      <p style={{fontSize:18,}}>{balance} ETH</p>
+                      <p style={{fontSize:18,}}>{parseFloat(balance).toFixed(2)} ETH</p>
+                    </ListGroup.Item>
+                    <ListGroup.Item style={{ textAlign:"center" }}>
+                      <Image src="https://qualified.one/static/img/content/logos/orbital-innovation_logo.png" style={{ width: 40, marginBottom:10 }}/> 
+                      <p style={{fontSize:18,}}>{kFormatter(orbitalBalance)} ORBITAL</p>
                     </ListGroup.Item>
                   </ListGroup>
                 </Card.Body>
@@ -227,28 +245,39 @@ const App = () => {
         </div>
         
 
-        <Modal show={depositModelShow} onHide={handleDepositModal}>
-                  <Modal.Header closeButton>
+        <Modal show={depositModelShow} onHide={handleDepositModal} >
+                  <Modal.Header closeButton style={{ backgroundColor:"#F7F7F7" }}>
                     <Modal.Title>Deposit</Modal.Title>
                   </Modal.Header>
-                  <Modal.Body>
-                  <Form onSubmit={(e) => {
-                    e.preventDefault();
-                    deposit(depositAmount)
-                  }}>
-                    <Form.Group >
-                      <Form.Label>How much you want to deposit?</Form.Label>
-                      <Form.Control type="number" placeholder="Enter amount" id="depositAmount" step="0.01" required value={depositAmount} onChange={event => setDepositAmount(event.target.value)}/>
-                      <Form.Text className="text-muted">
-                        (Min. amount is 0.01 ETH)
-                      </Form.Text>
-                    </Form.Group>
-                    <Button variant="primary" type="submit">
-                      Deposit
-                    </Button>
-                  </Form>
+                  <Modal.Body style={{ backgroundColor:"#F7F7F7", textAlign:"center" }}>
+                  {
+                    loading && 
+                    <div>
+                      <Image src="https://i.pinimg.com/originals/3f/2c/97/3f2c979b214d06e9caab8ba8326864f3.gif" style={{ width: 250, marginBottom:10, margin:"0px auto" }} />
+                      <p style={{fontSize:26, color:"#484848"}}>Waiting to your approval</p>
+                    </div>
+
+                  }
+                  {
+                    !loading &&  
+                    <Form onSubmit={(e) => {
+                      e.preventDefault();
+                      deposit(depositAmount)
+                    }}>
+                      <Form.Group >
+                        <Form.Label>How much you want to deposit?</Form.Label>
+                        <Form.Control type="number" placeholder="Enter amount" id="depositAmount" step="0.01" required value={depositAmount} onChange={event => setDepositAmount(event.target.value)}/>
+                        <Form.Text className="text-muted">
+                          (Min. amount is 0.01 ETH)
+                        </Form.Text>
+                      </Form.Group>
+                      <Button variant="primary" type="submit">
+                        Deposit
+                      </Button>
+                    </Form>
+                  }
                   </Modal.Body>
-                  <Modal.Footer>
+                  <Modal.Footer style={{ backgroundColor:"#F7F7F7" }}>
                     <Button variant="secondary" onClick={handleDepositModal}>
                       Close
                     </Button>
@@ -325,11 +354,11 @@ const App = () => {
 //     //check if MetaMask exists
 //     if (!this.ethEnabled()) {  alert("Please install MetaMask to use this dApp!");}
 //     const web3 = new Web3(window.web3.currentProvider);
-//     const netId = await web3.eth.net.getId();
-//     const accounts = await web3.eth.getAccounts();
+//     const netId = await window.web3.eth.net.getId();
+//     const accounts = await window.web3.eth.getAccounts();
 //     if(typeof accounts[0] !== 'undefined'){
-//       let balance = await web3.eth.getBalance(accounts[0]);
-//       balance = await web3.utils.fromWei(balance);
+//       let balance = await window.web3.eth.getBalance(accounts[0]);
+//       balance = await window.web3.utils.fromWei(balance);
 //       this.setState({ account: accounts[0], balance: balance, web3: web3});
 //     }else{
 //       window.alert('Please login with MetaMask');

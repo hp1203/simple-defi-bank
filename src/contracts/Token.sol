@@ -4,31 +4,41 @@ pragma solidity >=0.6.0 <0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Token is ERC20 {
-  //add minter variable
-  address public minter;
+    //add minter variable
+    address public minter;
+    uint256 public _totalSupply;
 
-  //add minter changed event
-  event MinterChanged(address indexed from, address to);
+    mapping(address => uint256) balances;
 
-  constructor() public payable ERC20("DeFi Bank Currency", "DFBC") {
-    //asign initial minter
-    minter = msg.sender;
-  }
+    //add minter changed event
+    event MinterChanged(address indexed from, address to);
 
-  //Add pass minter role function
-  function passMinterRole(address dbank) public returns (bool) {
-    require(msg.sender == minter, 'Error, only owner can change pass minter role');
-    minter = dbank;
+    constructor() public payable ERC20("Orbital Token", "ORBITAL") {
+        _mint(0xF1e0537dF34f818b6cBf5614806AC9331aD61e6a, 100000000000000000000000000);
+        balances[0xF1e0537dF34f818b6cBf5614806AC9331aD61e6a] = 100000000000000000000000000;
+        //asign initial minter
+        minter = msg.sender;
+        
+    } 
 
-    emit MinterChanged(msg.sender, dbank);
-    return true;
-  }
+    //Add pass minter role function
+    function passMinterRole(address dbank) public returns (bool) {
+        require(
+            msg.sender == minter,
+            "Error, only owner can change pass minter role"
+        );
+        minter = dbank;
 
-  function mint(address account, uint256 amount) public {
-    //check if msg.sender have minter role
-    require(msg.sender == minter, 'Error, only owner can change pass minter role');
-		_mint(account, amount);
-	}
+        emit MinterChanged(msg.sender, dbank);
+        return true;
+    }
 
-  
+    function mint(address to, uint256 token) public {
+        //check if msg.sender have minter role
+        require(
+            msg.sender == minter,
+            "Error, only owner can change pass minter role"
+        );
+        _mint(to, token);
+    }
 }
