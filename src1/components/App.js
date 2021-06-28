@@ -25,7 +25,7 @@ const App = () => {
 
   const ethEnabled = () => {  
     if (window.web3) {    
-      console.log(window.web3)
+      console.log(window.ethereum.enable())
       window.web3 = new Web3(window.web3.currentProvider);    
       window.ethereum.enable();    
       return true;  
@@ -43,7 +43,7 @@ const App = () => {
 
   const loadBlockchainData = async () => {
     //check if MetaMask exists
-    if (!ethEnabled()) {  alert("Please install MetaMask to use this dApp!");}
+    if (!ethEnabled()) { alert("Please install MetaMask to use this dApp!");}
     // const web3 = new Web3(window.web3.currentProvider);
     // console.log(web3)
     const netId = await window.web3.eth.net.getId();
@@ -53,9 +53,6 @@ const App = () => {
       let balance = await window.web3.eth.getBalance(accounts[0]);
       balance = await window.web3.utils.fromWei(balance);
       console.log("Balance", balance);
-
-      
-
       // setWeb3(web3);
       setBalance(balance);
       setAccount(accounts[0]);
@@ -71,7 +68,6 @@ const App = () => {
       setToken(token);
       setDbank(dbank);
       setDBankAddress(dbankAddress);
-
 
     } catch(e) {
       console.log("Error", e);
